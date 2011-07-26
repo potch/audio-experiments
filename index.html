@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <style>
+            b {
+                display: block;
+                width: 26px;
+                height: 19px;
+                margin: 5px 1px 2px;
+                float: left;
+                border-radius: 3px;
+                background: #080808;
+                box-shadow: 0 0 10px rgba(0,0,0,.5);
+            }
+            a {
+                display: block;
+                background: #f8f8f8;
+                margin: 0 3px;
+                height: 24px;
+                width: 20px;
+                border-radius: 4px 4px 0 0;
+                box-shadow: 0 -2px 1px rgba(0,0,0,.8) inset,
+                            0 -6px 2px rgba(180,180,180,.9) inset,
+                            0 -1px 8px #aaa inset,
+                            0 -1px 1px 1px #ccc inset;
+                position: relative;
+                top: -5px;
+            }
+            a.press {
+                top: -3px;
+                height: 22px;
+                box-shadow: 0 -2px 1px rgba(0,0,0,.8) inset,
+                            0 -3px 2px rgba(180,180,180,.9) inset,
+                            0 -1px 8px #999 inset,
+                            0 -1px 1px 1px #ccc inset;
+            }
+            a.on {
+                background: -moz-radial-gradient(
+                    center 9px 45deg,
+                    circle farthest-side,
+                    #f66 10%,
+                    #f00 50%,
+                    #fff 90%
+                );
+                box-shadow: 0 -2px 1px rgba(0,0,0,.8) inset,
+                            0 -8px 2px rgba(255,255,255,.4) inset,
+                            0 -6px 2px rgba(255,5,5,.6) inset,
+                            0 -1px 1px 1px #c44 inset;
+            }
+            a.on.press {
+                background: -moz-radial-gradient(
+                    center 9px 45deg,
+                    circle farthest-side,
+                    #f66 10%,
+                    #fee 50%,
+                    #fff 100%
+                );
+                box-shadow: 0 -2px 1px rgba(0,0,0,.8) inset,
+                            0 -3px 2px rgba(255,96,96,.6) inset,
+                            0 -1px 8px #d88 inset,
+                            0 -1px 1px 1px #c44 inset;
+            }
+            div {
+                margin: 0;
+                height: 24px;
+                padding: 1px 8px 2px;
+                border-bottom: 1px solid rgba(0,0,0,.4);
+                box-shadow: 0 1px rgba(255,255,255,.4);
+                padding-left: 38px;
+            }
+            div:first-child {
+                box-shadow: 0 -1px rgba(0,0,0,.4),
+                            0 1px rgba(255,255,255,.4);
+                border-top: 1px solid rgba(255,255,255,.4);
+            }
+            footer {
+                padding: 4px 2px 0 39px;
+            }
+            span {
+                display: block;
+                float: left;
+                background: #200;
+                margin: 0 10px;
+                height: 8px;
+                width: 8px;
+                border-radius: 4px;
+                box-shadow: 0 -1px 1px #bbb inset,
+                            0 1px 1px #888 inset;
+                background: -moz-radial-gradient(
+                  center 3px 45deg,
+                  circle closest-side,
+                  #800 0,
+                  #000 100%
+                );
+            }
+            span.on {
+                box-shadow: 0 -1px 1px #dbb inset,
+                            0 1px 1px #988 inset,
+                            0 0 5px rgba(212,0,0,.2);
+                background: -moz-radial-gradient(
+                  center 3px 45deg,
+                  circle farthest-side,
+                  #f88 0,
+                  #f00 30%,
+                  #000 70%
+                );
+            }
+            article {
+                background: url('grain.png');
+                width: 496px;
+                padding: 16px 16px 16px;
+                border-radius: 16px;
+                z-index: -2;
+            }
+        </style>
+    </head>
+    <body>
+      <article>
+        <section>
+        </section>
+        <footer>
+        </footer>
+      </article>
+      <script src="synth.js"></script>
+      <script src="dsp.js"></script>
+      <script>
+        const RATE = 22050;
+        var $ = document.querySelectorAll.bind(document);
+
+        var section = document.querySelector('section'),
+            footer = document.querySelector('footer'),
+            output = new Audio(),
+            tempo = 120;
+        output.mozSetup(1, RATE);
+        
+        var drums = [
+          Synth.vol(
+            Synth.fadeOut(
+              Synth.mix(
+                Synth.generateSlide(80, 50, .1),
+                Synth.generateSlide(160, 100, .1)
+              )
+            ),
+            .5
+          ),
+          Synth.vol(
+            Synth.fadeOut(
+              Synth.generateNoise(.1)
+            ),
+            .5
+          ),
+          Synth.envelope(
+            Synth.mix(
+              Synth.generateTone(4000,.1),
+              Synth.generateTone(6000,.1),
+              Synth.generateTone(8000,.1),
+              Synth.fadeOut(Synth.generateNoise(.1))
+            ),
+            [[0,1],[.25,.5],[.5,.25],[1,0]]
+          )
+        ];
+        drums[3] = Synth.generateNoise(.05);
+        (new IIRFilter2(1, 10000, .9, 11025)).process(drums[3]);
+        drums[3] = Synth.fadeOut(drums[3]);
+
+        for (var i=0; i<4; i++) {
+          section.innerHTML += '<div>' + (new Array(17)).join('<b><a href="#"></a></b>') + '</div>';
+        }
+        footer.innerHTML = (new Array(17)).join('<span></span>');
+
+        section.addEventListener('mousedown', pressOn, false);
+        section.addEventListener('mouseup', pressOff, false);
+        section.addEventListener('mouseout', pressOff, false);
+
+        function pressOn(e) {
+          if (e.originalTarget.nodeName == 'A') {
+            e.originalTarget.classList.add('press');
+            e.originalTarget.classList.toggle('on');
+          }
+          e.preventDefault();
+        }
+        function pressOff(e) {
+          if (e.originalTarget.nodeName == 'A') {
+            e.originalTarget.classList.remove('press');
+          }
+          e.preventDefault();
+        }
+        
+        var idx = 0,
+            lights = $('footer span'),
+            beatWave,
+            rows = $('section div');
+            buttons = [];
+        for (var i=0; i<4; i++) {
+          buttons.push(rows[i].querySelectorAll('a'));
+        }
+        setInterval(function() {
+          var oi = idx;
+          idx = (idx + 1) % 16;
+          lights[idx].classList.add('on');
+          lights[oi].classList.remove('on');
+          beatWave = [];
+          for (var i=0; i<4; i++) {
+            if (buttons[i][idx].classList.contains('on')) {
+              beatWave.push(drums[i]);
+            } else {
+              beatWave.push([0]);
+            }
+          }
+          output.mozWriteAudio(Synth.mix.apply(this, beatWave));
+        }, 150);
+      </script>
+    </body>
+</html>
